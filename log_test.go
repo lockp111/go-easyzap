@@ -8,9 +8,8 @@ import (
 
 func TestLogNormal(t *testing.T) {
 	zlog := New(&Config{
-		LogDir:   "logs/",
-		Filename: "out.log",
-		Level:    zapcore.InfoLevel,
+		LogPath: "logs/out.log",
+		Level:   zapcore.InfoLevel,
 	})
 
 	zlog.Info("TestLogNormal")
@@ -20,8 +19,7 @@ func TestLogNormal(t *testing.T) {
 
 func TestLogDisableStd(t *testing.T) {
 	zlog := New(&Config{
-		LogDir:     "logs/",
-		Filename:   "out.log",
+		LogPath:    "logs/out.log",
 		Level:      zapcore.InfoLevel,
 		DisableStd: true,
 	})
@@ -33,8 +31,7 @@ func TestLogDisableStd(t *testing.T) {
 
 func TestLogJSONOut(t *testing.T) {
 	zlog := New(&Config{
-		LogDir:     "logs/",
-		Filename:   "out.log",
+		LogPath:    "logs/out.log",
 		Level:      zapcore.InfoLevel,
 		JSONFormat: true,
 		DisableStd: true,
@@ -47,11 +44,10 @@ func TestLogJSONOut(t *testing.T) {
 
 func TestLogErrOut(t *testing.T) {
 	zlog := New(&Config{
-		LogDir:      "logs/",
-		Filename:    "out.log",
-		Level:       zapcore.InfoLevel,
-		JSONFormat:  true,
-		ErrFilename: "err.log",
+		LogPath:    "logs/out.log",
+		ErrPath:    "logs/err.log",
+		Level:      zapcore.InfoLevel,
+		JSONFormat: true,
 	})
 
 	zlog.Info("TestLogErrOut")
@@ -61,11 +57,10 @@ func TestLogErrOut(t *testing.T) {
 
 func TestLogTrace(t *testing.T) {
 	zlog := New(&Config{
-		LogDir:      "logs/",
-		Filename:    "out.log",
-		Level:       zapcore.InfoLevel,
-		Trace:       true,
-		ErrFilename: "err.log",
+		LogPath: "logs/out.log",
+		ErrPath: "logs/err.log",
+		Level:   zapcore.InfoLevel,
+		Trace:   true,
 	})
 
 	zlog.Info("TestLogTrace")

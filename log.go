@@ -12,13 +12,12 @@ import (
 
 // Config easyzap config
 type Config struct {
-	LogDir      string
-	Filename    string
-	ErrFilename string
-	Level       zapcore.Level
-	JSONFormat  bool
-	Trace       bool
-	DisableStd  bool
+	LogPath    string
+	ErrPath    string
+	Level      zapcore.Level
+	JSONFormat bool
+	Trace      bool
+	DisableStd bool
 }
 
 // New
@@ -56,16 +55,17 @@ func New(cfg *Config) *zap.SugaredLogger {
 		encoder = zapcore.NewJSONEncoder(encoderCfg)
 	}
 
-	// 获取日志文件的io.Writer
-	fileOut := getWriter(cfg.LogDir, cfg.Filename)
-	cores = append(cores, zapcore.NewCore(
-		encoder,
-		zapcore.AddSync(fileOut),
-		cfg.Level,
-	))
+	if len(cfg.LogPath) != 0 {
+		fileOut := getWriter(cfg.LogPath)
+		cores = append(cores, zapcore.NewCore(
+			encoder,
+			zapcore.AddSync(fileOut),
+			cfg.Level,
+		))
+	}
 
-	if len(cfg.ErrFilename) != 0 {
-		errOut := getWriter(cfg.LogDir, cfg.ErrFilename)
+	if len(cfg.ErrPath) != 0 {
+		errOut := getWriter(cfg.ErrPath)
 		cores = append(cores, zapcore.NewCore(
 			encoder,
 			zapcore.AddSync(errOut),
@@ -79,12 +79,13 @@ func New(cfg *Config) *zap.SugaredLogger {
 	return logger.Sugar()
 }
 
-func getWriter(dir, filename string) io.Writer {
+// getWriter 获取日志文件的io.Writer
+func getWriter(path string) io.Writer {
 	// 生成rotatelogs的Logger 实际生成的文件名 demo.log.YYmmddHH
 	// 保存7天内的日志，每天分割一次日志
 	hook, err := rotatelogs.New(
-		dir+filename+".%Y%m%d",
-		rotatelogs.WithLinkName(dir+filename),
+		path+".%Y%m%d",
+		rotatelogs.WithLinkName(path),
 		rotatelogs.WithMaxAge(time.Hour*24*7),
 		rotatelogs.WithRotationTime(time.Hour*24),
 	)
