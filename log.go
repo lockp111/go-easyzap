@@ -3,6 +3,7 @@ package easyzap
 import (
 	"io"
 	"os"
+	"strings"
 	"time"
 
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
@@ -21,7 +22,7 @@ type Config struct {
 }
 
 // New
-func New(cfg *Config) *zap.SugaredLogger {
+func New(cfg *Config, hooks ...zapcore.Core) *zap.SugaredLogger {
 	encoderCfg := zapcore.EncoderConfig{
 		MessageKey:  "msg",
 		LevelKey:    "level",
@@ -29,7 +30,7 @@ func New(cfg *Config) *zap.SugaredLogger {
 		CallerKey:   "caller",
 		LineEnding:  zapcore.DefaultLineEnding,
 		EncodeLevel: zapcore.LowercaseLevelEncoder,
-		//EncodeLevel:    zapcore.CapitalColorLevelEncoder,
+		// EncodeLevel:    zapcore.LowercaseColorLevelEncoder,
 		EncodeCaller:   zapcore.ShortCallerEncoder,
 		EncodeTime:     zapcore.RFC3339NanoTimeEncoder,
 		EncodeDuration: zapcore.MillisDurationEncoder,
@@ -73,6 +74,7 @@ func New(cfg *Config) *zap.SugaredLogger {
 		))
 	}
 
+	cores = append(cores, hooks...)
 	// 需要传入zap.AddCaller()才会显示打日志点的文件名和行数
 	logger := zap.New(zapcore.NewTee(cores...), zap.AddCaller(), zap.AddStacktrace(zap.ErrorLevel))
 	defer logger.Sync()
@@ -81,10 +83,10 @@ func New(cfg *Config) *zap.SugaredLogger {
 
 // getWriter 获取日志文件的io.Writer
 func getWriter(path string) io.Writer {
-	// 生成rotatelogs的Logger 实际生成的文件名 demo.log.YYmmddHH
+	// 生成rotatelogs的Logger 实际生成的文件名 demo.YYmmdd.log
 	// 保存7天内的日志，每天分割一次日志
 	hook, err := rotatelogs.New(
-		path+".%Y%m%d",
+		strings.TrimRight(path, ".log")+".%Y%m%d.log",
 		rotatelogs.WithLinkName(path),
 		rotatelogs.WithMaxAge(time.Hour*24*7),
 		rotatelogs.WithRotationTime(time.Hour*24),
