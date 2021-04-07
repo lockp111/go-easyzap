@@ -67,3 +67,17 @@ func TestLogTrace(t *testing.T) {
 	zlog.Warn("TestLogTrace")
 	zlog.Error("TestLogTrace")
 }
+
+func TestLogTraceJSON(t *testing.T) {
+	zlog := New(&Config{
+		LogPath:    "logs/out.log",
+		ErrPath:    "logs/err.log",
+		Level:      zapcore.InfoLevel,
+		Trace:      true,
+		JSONFormat: true,
+	})
+
+	zlog.Info("TestLogTrace")
+	zlog.Warn("TestLogTrace")
+	zlog.Error("TestLogTrace")
+}
