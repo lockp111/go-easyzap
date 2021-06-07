@@ -22,7 +22,7 @@ type Config struct {
 }
 
 // New
-func New(cfg *Config, hooks ...zapcore.Core) *zap.SugaredLogger {
+func New(cfg *Config, cores ...zapcore.Core) *zap.SugaredLogger {
 	encoderCfg := zapcore.EncoderConfig{
 		MessageKey:  "msg",
 		LevelKey:    "level",
@@ -41,11 +41,11 @@ func New(cfg *Config, hooks ...zapcore.Core) *zap.SugaredLogger {
 	}
 
 	var (
-		encoder = zapcore.NewConsoleEncoder(encoderCfg)
-		cores   []zapcore.Core
+		encoder  = zapcore.NewConsoleEncoder(encoderCfg)
+		newCores []zapcore.Core
 	)
 	if !cfg.DisableStd {
-		cores = append(cores, zapcore.NewCore(
+		newCores = append(newCores, zapcore.NewCore(
 			encoder,
 			zapcore.AddSync(os.Stdout),
 			cfg.Level,
@@ -58,7 +58,7 @@ func New(cfg *Config, hooks ...zapcore.Core) *zap.SugaredLogger {
 
 	if len(cfg.LogPath) != 0 {
 		fileOut := getWriter(cfg.LogPath)
-		cores = append(cores, zapcore.NewCore(
+		newCores = append(newCores, zapcore.NewCore(
 			encoder,
 			zapcore.AddSync(fileOut),
 			cfg.Level,
@@ -67,16 +67,19 @@ func New(cfg *Config, hooks ...zapcore.Core) *zap.SugaredLogger {
 
 	if len(cfg.ErrPath) != 0 {
 		errOut := getWriter(cfg.ErrPath)
-		cores = append(cores, zapcore.NewCore(
+		newCores = append(newCores, zapcore.NewCore(
 			encoder,
 			zapcore.AddSync(errOut),
 			zap.ErrorLevel,
 		))
 	}
 
-	cores = append(cores, hooks...)
+	newCores = append(newCores, cores...)
 	// 需要传入zap.AddCaller()才会显示打日志点的文件名和行数
-	logger := zap.New(zapcore.NewTee(cores...), zap.AddCaller(), zap.AddStacktrace(zap.ErrorLevel))
+	logger := zap.New(zapcore.NewTee(newCores...),
+		zap.AddCaller(),
+		zap.AddStacktrace(zap.ErrorLevel),
+	)
 	defer logger.Sync()
 	return logger.Sugar()
 }
