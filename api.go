@@ -3,7 +3,7 @@ package easyzap
 import "go.uber.org/zap"
 
 var zlog = New(&Config{
-	Level: zap.DebugLevel,
+	Level: zap.InfoLevel,
 })
 
 // Inject ...
@@ -96,7 +96,8 @@ func Fatalf(template string, args ...interface{}) {
 // pairs are treated as they are in With.
 //
 // When debug-level logging is disabled, this is much faster than
-//  s.With(keysAndValues).Debug(msg)
+//
+//	s.With(keysAndValues).Debug(msg)
 func Debugw(msg string, keysAndValues ...interface{}) {
 	zlog.Debugw(msg, keysAndValues...)
 }
