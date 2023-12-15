@@ -78,6 +78,5 @@ func New(cfg *Config, cores ...zapcore.Core) *zap.SugaredLogger {
 		zap.AddCaller(),
 		zap.AddStacktrace(zap.ErrorLevel),
 	)
-	defer logger.Sync()
 	return logger.Sugar()
 }
