@@ -2,13 +2,14 @@ package easyzap
 
 import "go.uber.org/zap"
 
-var zlog = New(&Config{
-	Level: zap.InfoLevel,
-})
+var zlog = New(Config{
+	Level:      zap.InfoLevel,
+	CallerSkip: 1,
+}).Sugar()
 
 // Inject ...
-func Inject(l *zap.SugaredLogger) {
-	zlog = l
+func Inject(l *zap.Logger) {
+	zlog = l.Sugar()
 }
 
 // Note that the keys in key-value pairs should be strings. In development,

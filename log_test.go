@@ -7,7 +7,7 @@ import (
 )
 
 func TestLogNormal(t *testing.T) {
-	zlog := New(&Config{
+	zlog := New(Config{
 		LogPath: "logs/out.log",
 		Level:   zapcore.InfoLevel,
 	})
@@ -15,10 +15,11 @@ func TestLogNormal(t *testing.T) {
 	zlog.Info("TestLogNormal")
 	zlog.Warn("TestLogNormal")
 	zlog.Error("TestLogNormal")
+	zlog.Sync()
 }
 
 func TestLogDisableStd(t *testing.T) {
-	zlog := New(&Config{
+	zlog := New(Config{
 		LogPath:    "logs/out.log",
 		Level:      zapcore.InfoLevel,
 		DisableStd: true,
@@ -27,23 +28,25 @@ func TestLogDisableStd(t *testing.T) {
 	zlog.Info("TestLogDisableStd")
 	zlog.Warn("TestLogDisableStd")
 	zlog.Error("TestLogDisableStd")
+	zlog.Sync()
 }
 
 func TestLogJSONOut(t *testing.T) {
-	zlog := New(&Config{
+	zlog := New(Config{
 		LogPath:    "logs/out.log",
 		Level:      zapcore.InfoLevel,
 		JSONFormat: true,
-		DisableStd: true,
+		DisableStd: false,
 	})
 
 	zlog.Info("TestLogJSONOut")
 	zlog.Warn("TestLogJSONOut")
 	zlog.Error("TestLogJSONOut")
+	zlog.Sync()
 }
 
 func TestLogErrOut(t *testing.T) {
-	zlog := New(&Config{
+	zlog := New(Config{
 		LogPath:    "logs/out.log",
 		ErrPath:    "logs/err.log",
 		Level:      zapcore.InfoLevel,
@@ -53,10 +56,11 @@ func TestLogErrOut(t *testing.T) {
 	zlog.Info("TestLogErrOut")
 	zlog.Warn("TestLogErrOut")
 	zlog.Error("TestLogErrOut")
+	zlog.Sync()
 }
 
 func TestLogTrace(t *testing.T) {
-	zlog := New(&Config{
+	zlog := New(Config{
 		LogPath: "logs/out.log",
 		ErrPath: "logs/err.log",
 		Level:   zapcore.InfoLevel,
@@ -66,10 +70,11 @@ func TestLogTrace(t *testing.T) {
 	zlog.Info("TestLogTrace")
 	zlog.Warn("TestLogTrace")
 	zlog.Error("TestLogTrace")
+	zlog.Sync()
 }
 
 func TestLogTraceJSON(t *testing.T) {
-	zlog := New(&Config{
+	zlog := New(Config{
 		LogPath:    "logs/out.log",
 		ErrPath:    "logs/err.log",
 		Level:      zapcore.InfoLevel,
@@ -80,4 +85,12 @@ func TestLogTraceJSON(t *testing.T) {
 	zlog.Info("TestLogTrace")
 	zlog.Warn("TestLogTrace")
 	zlog.Error("TestLogTrace")
+	zlog.Sync()
+}
+
+func TestAPI(t *testing.T) {
+	Info("TestLogAPI")
+	Warn("TestLogAPI")
+	Error("TestLogAPI")
+	Sync()
 }

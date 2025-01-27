@@ -2,81 +2,90 @@ package easyzap
 
 import (
 	"os"
+	"time"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 // Config easyzap config
 type Config struct {
-	LogPath         string
-	ErrPath         string
-	RotationCount   uint
-	RotationSeconds int64
-	MaxDay          int64
-	Level           zapcore.Level
-	JSONFormat      bool
-	Trace           bool
-	DisableStd      bool
+	LogPath       string        `json:"log_path"`
+	ErrPath       string        `json:"err_path"`
+	Level         zapcore.Level `json:"level"`
+	MaxSize       int           `json:"max_size"`
+	MaxBackups    int           `json:"max_backups"`
+	MaxDay        int           `json:"max_day"`
+	CallerSkip    int           `json:"caller_skip"`
+	DisableStd    bool          `json:"disable_std"`
+	JSONFormat    bool          `json:"json_format"`
+	Trace         bool          `json:"trace"`
+	Compress      bool          `json:"compress"`
+	DisableCaller bool          `json:"disable_caller"`
 }
 
 // New
-func New(cfg *Config, cores ...zapcore.Core) *zap.SugaredLogger {
-	encoderCfg := zapcore.EncoderConfig{
-		MessageKey:     "msg",
-		LevelKey:       "level",
-		TimeKey:        "ts",
-		CallerKey:      "caller",
-		LineEnding:     zapcore.DefaultLineEnding,
-		EncodeLevel:    zapcore.LowercaseColorLevelEncoder,
-		EncodeCaller:   zapcore.ShortCallerEncoder,
-		EncodeTime:     zapcore.RFC3339NanoTimeEncoder,
-		EncodeDuration: zapcore.MillisDurationEncoder,
-	}
-
-	if cfg.Trace {
-		encoderCfg.StacktraceKey = "trace"
-	}
-
-	var newCores []zapcore.Core
-	if !cfg.DisableStd {
-		newCores = append(newCores, zapcore.NewCore(
-			zapcore.NewConsoleEncoder(encoderCfg),
-			zapcore.AddSync(os.Stdout),
-			cfg.Level,
-		))
-	}
-
-	// 去掉颜色
-	encoderCfg.EncodeLevel = zapcore.LowercaseLevelEncoder
-	var encoder = zapcore.NewConsoleEncoder(encoderCfg)
-	if cfg.JSONFormat {
-		encoder = zapcore.NewJSONEncoder(encoderCfg)
-	}
-
-	if len(cfg.LogPath) != 0 {
-		fileOut := newLogFile(cfg.LogPath, cfg.RotationCount, cfg.RotationSeconds, cfg.MaxDay)
-		newCores = append(newCores, zapcore.NewCore(
-			encoder,
-			zapcore.AddSync(fileOut),
-			cfg.Level,
-		))
-	}
-
-	if len(cfg.ErrPath) != 0 {
-		errOut := newLogFile(cfg.ErrPath, cfg.RotationCount, cfg.RotationSeconds, cfg.MaxDay)
-		newCores = append(newCores, zapcore.NewCore(
-			encoder,
-			zapcore.AddSync(errOut),
-			zap.ErrorLevel,
-		))
-	}
-
-	newCores = append(newCores, cores...)
-	// 需要传入zap.AddCaller()才会显示打日志点的文件名和行数
-	logger := zap.New(zapcore.NewTee(newCores...),
-		zap.AddCaller(),
-		zap.AddStacktrace(zap.ErrorLevel),
+func New(cfg Config) *zap.Logger {
+	var (
+		cores []zapcore.Core
+		ws    []zapcore.WriteSyncer
+		opts  = []zap.Option{
+			zap.WithPanicHook(zapcore.WriteThenPanic),
+			zap.WithFatalHook(zapcore.WriteThenFatal),
+		}
 	)
-	return logger.Sugar()
+
+	if !cfg.DisableStd {
+		ws = append(ws, zapcore.AddSync(os.Stdout))
+	}
+	if !cfg.DisableCaller {
+		opts = append(opts, zap.WithCaller(true), zap.AddCallerSkip(cfg.CallerSkip))
+	}
+	if cfg.Trace {
+		opts = append(opts, zap.AddStacktrace(cfg.Level))
+	}
+
+	zapCfg := zap.NewProductionEncoderConfig()
+	zapCfg.EncodeTime = zapcore.RFC3339NanoTimeEncoder
+	encoder := zapcore.NewConsoleEncoder(zapCfg)
+	if cfg.JSONFormat {
+		encoder = zapcore.NewJSONEncoder(zapCfg)
+	}
+
+	if cfg.LogPath != "" {
+		ws = append(ws, zapcore.AddSync(&lumberjack.Logger{
+			Filename:   cfg.LogPath,
+			MaxSize:    cfg.MaxSize,
+			MaxBackups: cfg.MaxBackups,
+			MaxAge:     cfg.MaxDay,
+			Compress:   cfg.Compress,
+			LocalTime:  true,
+		}))
+	}
+
+	if cfg.ErrPath != "" {
+		cores = append(cores, zapcore.NewCore(
+			encoder,
+			zapcore.AddSync(&lumberjack.Logger{
+				Filename:   cfg.ErrPath,
+				MaxSize:    cfg.MaxSize,
+				MaxBackups: cfg.MaxBackups,
+				MaxAge:     cfg.MaxDay,
+				Compress:   cfg.Compress,
+				LocalTime:  true,
+			}),
+			zap.NewAtomicLevelAt(zapcore.ErrorLevel),
+		))
+	}
+
+	cores = append(cores, zapcore.NewCore(
+		encoder,
+		&zapcore.BufferedWriteSyncer{
+			WS:            zapcore.NewMultiWriteSyncer(ws...),
+			FlushInterval: time.Second,
+		},
+		zap.NewAtomicLevelAt(cfg.Level),
+	))
+	return zap.New(zapcore.NewTee(cores...), opts...)
 }
